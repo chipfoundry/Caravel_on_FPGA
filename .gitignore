@@ -2,4 +2,5 @@
 vivado/
 vivado*
 *.tmp
-
+*.DS_Store
+.idea
