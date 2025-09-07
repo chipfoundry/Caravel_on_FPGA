@@ -2,14 +2,14 @@
 #include <stub.h>
 //#include <limits.h>
 
-#include "EF_TMR32.h"
+//#include "EF_TMR32.h"
 
 #define CSR_PWM0_BASE 0x30000000L
 #define CSR_PWM1_BASE 0x30010000L
 #define CSR_PWM2_BASE 0x30020000L
 #define CSR_PWM3_BASE 0x30030000L
 
-#define TMR320 ((EF_TMR32_TYPE_PTR)CSR_PWM0_BASE)
+//#define TMR320 ((EF_TMR32_TYPE_PTR)CSR_PWM0_BASE)
 
 
 // --------------------------------------------------------
@@ -256,44 +256,16 @@ void delay(const int d)
 //
 //}
 
-EF_DRIVER_STATUS EF_TMR32_PWM_Example(void) {
-    EF_DRIVER_STATUS status;
-
-    uint32_t reload_value = 10000; // Timer reload value
-    uint32_t duty_cycle = 70;       // Duty cycle for PWM0
-
-
-    // Step 1: Enable GCLK
-    status |= EF_TMR32_setGclkEnable(TMR320, 1);
-    if (status != EF_DRIVER_OK) {return status;}
-
-    // Step 2: Enable the timer
-    status |= EF_TMR32_enable(TMR320);
-
-    // Step 3: Enable PWM0
-    status |= EF_TMR32_PWM0Enable(TMR320);
-    if (status != EF_DRIVER_OK) {return status;}
-
-    // Step 4: Set PWM0 to Edge-Aligned Mode
-    // Set PWM0 to edge-aligned mode with 70% duty cycle
-    status |= EF_TMR32_setPWM0EdgeAlignmentMode(TMR320, reload_value, duty_cycle);
-    if (status != EF_DRIVER_OK) {return status;}
-
-    // Step 5: Disable the timer
-    status |= EF_TMR32_disable(TMR320);
-
-    return status;
-}
-
 void config_pwm_ticks(int p0_ticks, int p1_ticks, int p2_ticks, int p3_ticks)
 {
 
     const int reload = 240000;   // servo requires 50 Hz period
     const int prescale = 0;
-    const int config = 0b110;
+    const int config = 0b110;            // count up | periodic
+    const int cmpy_value = 2400000;      // count up | periodic
     const int disable = 0b0000;
     const int enable = 0b1101;
-    const int match  = 0b000000010110;   // cmpx_down | cmpy_down | reload | cmpy_up | cmpx_up | zero
+    const int match  = 0b000010000110;   // cmpx_down | cmpy_down | reload | cmpy_up | cmpx_up | zero
 
     // clock = 12MHz period = 83.33 nsec
     // reload = 240000 = 20 ms = 50 Hz
@@ -303,47 +275,46 @@ void config_pwm_ticks(int p0_ticks, int p1_ticks, int p2_ticks, int p3_ticks)
     // cmpx = 24000 = 2000 usec    90 deg
     // cmpx = 30000 = 2500 usec   180 deg
 
-        csr_write_simple(1, CSR_PWM0_BASE + 0xff10L);           // enable clock via gate
-        csr_write_simple(0, CSR_PWM0_BASE + 0x28L);             // clear fault
+//        csr_write_simple(1, CSR_PWM0_BASE + 0xff10L);           // enable clock via gate
         csr_write_simple(disable, CSR_PWM0_BASE + 0x14L);       // Disable Timer
         csr_write_simple(reload, CSR_PWM0_BASE + 0x04L);        // Reload
         csr_write_simple(prescale, CSR_PWM0_BASE + 0x08L);      // Set prescale
         csr_write_simple(config, CSR_PWM0_BASE + 0x18L);        // Set Cfg
         csr_write_simple(p0_ticks, CSR_PWM0_BASE + 0x0cL);      // Cmpx
-        csr_write_simple(p0_ticks, CSR_PWM0_BASE + 0x10L);      // Cmpy
+        csr_write_simple(cmpy_value, CSR_PWM0_BASE + 0x10L);    // Cmpy
         csr_write_simple(match, CSR_PWM0_BASE + 0x1cL);         // pwm0cfg - match high
         csr_write_simple(match, CSR_PWM0_BASE + 0x20L);         // pwm1cfg - match high
         csr_write_simple(enable, CSR_PWM0_BASE + 0x14L);        // Ctrl - Enable PWM
 
-        csr_write_simple(1, CSR_PWM0_BASE + 0xff10L);     // enable clock gating
+//        csr_write_simple(1, CSR_PWM0_BASE + 0xff10L);         // enable clock gating
         csr_write_simple(disable, CSR_PWM1_BASE + 0x14L);       // Disable Timer
         csr_write_simple(reload, CSR_PWM1_BASE + 0x04L);        // Reload
         csr_write_simple(prescale, CSR_PWM1_BASE + 0x08L);      // Set prescale
         csr_write_simple(config, CSR_PWM1_BASE + 0x18L);        // Set Cfg
         csr_write_simple(p1_ticks, CSR_PWM1_BASE + 0x0cL);      // Cmpx
-        csr_write_simple(p1_ticks, CSR_PWM1_BASE + 0x10L);      // Cmpy
+        csr_write_simple(cmpy_value, CSR_PWM1_BASE + 0x10L);    // Cmpy
         csr_write_simple(match, CSR_PWM1_BASE + 0x1cL);         // pwm0cfg - match high
         csr_write_simple(match, CSR_PWM1_BASE + 0x20L);         // pwm1cfg - match high
         csr_write_simple(enable, CSR_PWM1_BASE + 0x14L);        // Ctrl - Enable PWM
 
-        csr_write_simple(1, CSR_PWM0_BASE + 0xff10L);           // enable clock gating
+//        csr_write_simple(1, CSR_PWM0_BASE + 0xff10L);         // enable clock gating
         csr_write_simple(disable, CSR_PWM2_BASE + 0x14L);       // Disable Timer
         csr_write_simple(reload, CSR_PWM2_BASE + 0x04L);        // Reload
         csr_write_simple(prescale, CSR_PWM2_BASE + 0x08L);      // Set prescale
         csr_write_simple(config, CSR_PWM2_BASE + 0x18L);        // Set Cfg
         csr_write_simple(p2_ticks, CSR_PWM2_BASE + 0x0cL);      // Cmpx
-        csr_write_simple(p2_ticks, CSR_PWM2_BASE + 0x10L);    // Cmpy
+        csr_write_simple(cmpy_value, CSR_PWM2_BASE + 0x10L);    // Cmpy
         csr_write_simple(match, CSR_PWM2_BASE + 0x1cL);         // pwm0cfg - match high
-        csr_write_simple(match, CSR_PWM2_BASE + 0x20L);       // pwm1cfg - match high
+        csr_write_simple(match, CSR_PWM2_BASE + 0x20L);         // pwm1cfg - match high
         csr_write_simple(enable, CSR_PWM2_BASE + 0x14L);        // Ctrl - Enable PWM
 
-        csr_write_simple(1, CSR_PWM0_BASE + 0xff10L);     // enable clock gating
+//        csr_write_simple(1, CSR_PWM0_BASE + 0xff10L);         // enable clock gating
         csr_write_simple(disable, CSR_PWM3_BASE + 0x14L);       // Disable Timer
         csr_write_simple(reload, CSR_PWM3_BASE + 0x04L);        // Reload
         csr_write_simple(prescale, CSR_PWM3_BASE + 0x08L);      // Set prescale
         csr_write_simple(config, CSR_PWM3_BASE + 0x18L);        // Set Cfg
         csr_write_simple(p3_ticks, CSR_PWM3_BASE + 0x0cL);      // Cmpx
-        csr_write_simple(p3_ticks, CSR_PWM3_BASE + 0x10L);      // Cmpy
+        csr_write_simple(cmpy_value, CSR_PWM3_BASE + 0x10L);    // Cmpy
         csr_write_simple(match, CSR_PWM3_BASE + 0x1cL);         // pwm0cfg - match high
         csr_write_simple(match, CSR_PWM3_BASE + 0x20L);         // pwm1cfg - match high
         csr_write_simple(enable, CSR_PWM3_BASE + 0x14L);        // Ctrl - Enable PWM
@@ -360,9 +331,11 @@ void main()
     reg_gpio_ien = 1;
     reg_gpio_oe = 1;
 
+    reg_wb_enable  = 1;
+
     configure_io();
 
-//    reg_uart_enable = 1;
+    reg_uart_enable = 1;
 
     // Configure All LA probes as inputs to the cpu
 	reg_la0_oenb = reg_la0_iena = 0x00000000;    // [31:0]
@@ -370,56 +343,42 @@ void main()
 	reg_la2_oenb = reg_la2_iena = 0x00000000;    // [95:64]
 	reg_la3_oenb = reg_la3_iena = 0x00000000;    // [127:96]
 
-	// write data to la output
-    //	reg_la0_data = 0x00;
-    //	reg_la1_data = 0x00;
-    //	reg_la2_data = 0x00;
-    //	reg_la3_data = 0x00;
-
-    // read data from la input
-    //	data0 = reg_la0_data;
-    //	data1 = reg_la1_data;
-    //	data2 = reg_la2_data;
-    //	data3 = reg_la3_data;
-
 //    print("Hello World !!\n");
 
-//	const int _DELAY_VALUE = 300000;
-	const int _DELAY_VALUE = 800000;
+//	const int _DELAY_VALUE = 800000;
+	const int _DELAY_VALUE = 8000000;
 
-    EF_TMR32_PWM_Example();
+    reg_gpio_out = 0; // ON
+
+    // clock = 12MHz period = 83.33 nsec
+    // reload = 240000 = 20 ms = 50 Hz
+    // cmpx =  6000 =  500 usec  -180 deg
+    // cmpx = 12000 = 1000 usec   -90 deg
+    // cmpx = 18000 = 1500 usec     0 deg
+    // cmpx = 24000 = 2000 usec    90 deg
+    // cmpx = 30000 = 2500 usec   180 deg
 
 	while (1) {
 
         reg_gpio_out = 1; // OFF
-//        config_pwm_ticks(18000, 18000, 18000, 18000);
-//        reg_mprj_datal = 0x00000000;
-//        reg_mprj_datah = 0x00000000;
+        config_pwm_ticks(18000, 18000, 18000, 18000);
 
 		delay(_DELAY_VALUE);
 
         reg_gpio_out = 0;  // ON
-//        config_pwm_ticks(12000, 12000, 12000, 12000);
-//        reg_mprj_datah = 0x0000003f;
-//        reg_mprj_datal = 0xffffffff;
+        config_pwm_ticks(6000, 6000, 6000, 6000);
 
 		delay(_DELAY_VALUE);
 
-//        reg_gpio_out = 1; // OFF
-//        config_pwm(0, 0, 0, 0);
-//        config_pwm_ticks(18000, 18000, 18000, 18000);
-        //reg_mprj_datal = 0x00000000;
-        //reg_mprj_datah = 0x00000000;
+        reg_gpio_out = 1; // OFF
+        config_pwm_ticks(18000, 18000, 18000, 18000);
 
-//		delay(_DELAY_VALUE);
+		delay(_DELAY_VALUE);
 
-//        reg_gpio_out = 0;  // ON
-//        config_pwm_ticks(24000, 24000, 24000, 24000);
-//        config_pwm(-180, -180, -180, -180);
-        //reg_mprj_datah = 0x0000003f;
-        //reg_mprj_datal = 0xffffffff;
+        reg_gpio_out = 0;  // ON
+        config_pwm_ticks(30000, 30000, 30000, 30000);
 
-//		delay(_DELAY_VALUE);
+		delay(_DELAY_VALUE);
     }
 
 

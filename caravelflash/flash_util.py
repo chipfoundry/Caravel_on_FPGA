@@ -17,7 +17,7 @@ log = logging.getLogger(__name__)
 
 UseCaravelPassThrough = False
 # FTDIDeviceURIDefault = 'ftdi://ftdi:2232:TG1000a9/2'
-FTDIDeviceURIDefault = 'ftdi://ftdi:2232:TG1108fb/2' # with SensiML
+#FTDIDeviceURIDefault = 'ftdi://ftdi:2232:TG1108fb/2' # with SensiML
 # FTDIDeviceURIDefault = 'ftdi://ftdi:2232:TG11091f/2'
 # FTDIDeviceURIDefault = 'ftdi://ftdi:2232:TG110cc6/1'
 

@@ -137,7 +137,7 @@ gpio = spi.get_gpio()
 gpio.set_direction(0b1111111100000000, 0b0010111100000000)  # (mask, dir)
 gpio.write(0b0000001100000000)
 # gpio.write(0b000100000000)
-led = Led(gpio)
+#led = Led(gpio)
 
 slave.write([CMD_RESET_CHIP])
 
@@ -158,7 +158,7 @@ slave.write([CMD_ERASE_CHIP])
 
 while (is_busy(slave)):
     time.sleep(0.5)
-    led.toggle()
+    #led.toggle()
 
 print("done")
 print("status = {}".format(hex(get_status(slave))))
