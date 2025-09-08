@@ -67,8 +67,8 @@ module caravel (
 `endif	
     inout                     gpio,     // Used for external LDO control
     inout [`MPRJ_IO_PADS-1:0] mprj_io,
-    // input                     clock,    // CMOS core clock input, not a crystal
-    input                     clk_osc,
+    input                     clock,    // CMOS core clock input, not a crystal
+    // input                     clk_osc,
     input                     FPGA_rst,   // Reset input (Active Low)
 
     // Note that only two flash data pins are dedicated to the
@@ -78,21 +78,21 @@ module caravel (
     output flash_csb,
     output flash_clk,
     inout  flash_io0,
-    inout  flash_io1
-//     output ser_rx_out,
-//     output ser_tx_out,
-//     output sdo_out,
-//     output sdi_out,
-//     output csb_out,
-//     output sck_out
+    inout  flash_io1,
+     output ser_rx_out,
+     output ser_tx_out,
+     output sdo_out,
+     output sdi_out,
+     output csb_out,
+     output sck_out
 );
 
       // FPGA button is active high (1 then 0) while caravel is active low (0 then 1), that is why it needs to be inverted 
 
-      // assign resetb = ~FPGA_rst;
+      assign resetb = ~FPGA_rst;
       wire clock;
 
-      clk_wiz_0 clock_div (.clk_out1(clock), .reset(FPGA_rst), .locked(resetb), .clk_in1(clk_osc));
+      // clk_wiz_0 clock_div (.clk_out1(clock), .reset(FPGA_rst), .locked(resetb), .clk_in1(clk_osc));
 
   //------------------------------------------------------------
   // This value is uniquely defined for each user project.
@@ -184,21 +184,21 @@ module caravel (
   // ser_tx	= mprj_io[6]		(output)
   // irq		= mprj_io[7]		(input)
 
-//   wire ser_rx_out;
-//   wire ser_tx_out;
+   wire ser_rx_out;
+   wire ser_tx_out;
 
-//   wire sdo_out;
-//   wire sdi_out;
-//   wire csb_out;
-//   wire sck_out;
+   wire sdo_out;
+   wire sdi_out;
+   wire csb_out;
+   wire sck_out;
 
-//   assign ser_rx_out =  mprj_io[5];
-//   assign ser_tx_out =  mprj_io[6];
+   assign ser_rx_out =  mprj_io[5];
+   assign ser_tx_out =  mprj_io[6];
 
-//   assign sdo_out = mprj_io[1];
-//   assign sdi_out = mprj_io[2];
-//   assign csb_out = mprj_io[3];
-  assign sck_out = mprj_io[4];
+   assign sdo_out = mprj_io[1];
+   assign sdi_out = mprj_io[2];
+   assign csb_out = mprj_io[3];
+   assign sck_out = mprj_io[4];
 
 
   wire clock_core;
