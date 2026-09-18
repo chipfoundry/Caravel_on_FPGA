@@ -11,6 +11,12 @@
 
 //#define TMR320 ((EF_TMR32_TYPE_PTR)CSR_PWM0_BASE)
 
+// Pmod 8LD on header JA: LD0-LD7 are mprj_io[28] through mprj_io[35],
+// which straddle the datal/datah register boundary at mprj_io[32].
+#define LED_BAR_MIN     0x01        //  500 usec, -180 deg
+#define LED_BAR_MID     0x0f        // 1500 usec,    0 deg
+#define LED_BAR_MAX     0xff        // 2500 usec,  180 deg
+
 
 // --------------------------------------------------------
 // Firmware routines
@@ -92,6 +98,12 @@ void configure_io()
     // Initiate the serial transfer to configure IO
     reg_mprj_xfer = 1;
     while (reg_mprj_xfer == 1);
+}
+
+void led_bar(unsigned int bits)
+{
+    reg_mprj_datal = (reg_mprj_datal & 0x0fffffff) | ((bits & 0x0f) << 28);
+    reg_mprj_datah = (reg_mprj_datah & 0xfffffff0) | ((bits >> 4) & 0x0f);
 }
 
 void delay(const int d)
@@ -362,21 +374,25 @@ void main()
 
         reg_gpio_out = 1; // OFF
         config_pwm_ticks(18000, 18000, 18000, 18000);
+        led_bar(LED_BAR_MID);
 
 		delay(_DELAY_VALUE);
 
         reg_gpio_out = 0;  // ON
         config_pwm_ticks(6000, 6000, 6000, 6000);
+        led_bar(LED_BAR_MIN);
 
 		delay(_DELAY_VALUE);
 
         reg_gpio_out = 1; // OFF
         config_pwm_ticks(18000, 18000, 18000, 18000);
+        led_bar(LED_BAR_MID);
 
 		delay(_DELAY_VALUE);
 
         reg_gpio_out = 0;  // ON
         config_pwm_ticks(30000, 30000, 30000, 30000);
+        led_bar(LED_BAR_MAX);
 
 		delay(_DELAY_VALUE);
     }
