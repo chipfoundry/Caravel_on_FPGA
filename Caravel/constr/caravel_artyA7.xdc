@@ -80,13 +80,14 @@ set_property -dict { PACKAGE_PIN E15   IOSTANDARD LVCMOS33 } [get_ports { mprj_i
 # set_property -dict { PACKAGE_PIN J15   IOSTANDARD LVCMOS33 } [get_ports { pin_mux_io[37] }]; #IO_L24N_T3_RS0_15 Sch=jb_n[4]
 
 ## Pmod Header JC
-# set_property -dict { PACKAGE_PIN U12   IOSTANDARD LVCMOS33 } [get_ports { pin_mux_io[38] }]; #IO_L20P_T3_A08_D24_14 Sch=jc_p[1]
+# Pmod ENC: A, B, BTN, SWT on JC pins 1-4
+set_property -dict { PACKAGE_PIN U12   IOSTANDARD LVCMOS33 } [get_ports { mprj_io[16] }]; #IO_L20P_T3_A08_D24_14 Sch=jc_p[1]
 # set_property -dict { PACKAGE_PIN V12   IOSTANDARD LVCMOS33 } [get_ports { pin_mux_io[39] }]; #IO_L20N_T3_A07_D23_14 Sch=jc_n[1]
-# set_property -dict { PACKAGE_PIN V10   IOSTANDARD LVCMOS33 } [get_ports { pin_mux_io[41] }]; #IO_L21P_T3_DQS_14 Sch=jc_p[2]
+set_property -dict { PACKAGE_PIN V10   IOSTANDARD LVCMOS33 } [get_ports { mprj_io[17] }]; #IO_L21P_T3_DQS_14 Sch=jc_p[2]
 # set_property -dict { PACKAGE_PIN V11   IOSTANDARD LVCMOS33 } [get_ports { pin_mux_io[42] }]; #IO_L21N_T3_DQS_A06_D22_14 Sch=jc_n[2]
-# set_property -dict { PACKAGE_PIN U14   IOSTANDARD LVCMOS33 } [get_ports { pin_mux_io[43] }]; #IO_L22P_T3_A05_D21_14 Sch=jc_p[3]
+set_property -dict { PACKAGE_PIN U14   IOSTANDARD LVCMOS33 } [get_ports { mprj_io[18] }]; #IO_L22P_T3_A05_D21_14 Sch=jc_p[3]
 # set_property -dict { PACKAGE_PIN V14   IOSTANDARD LVCMOS33 } [get_ports { pin_mux_io[44] }]; #IO_L22N_T3_A04_D20_14 Sch=jc_n[3]
-# set_property -dict { PACKAGE_PIN T13   IOSTANDARD LVCMOS33 } [get_ports { pin_mux_io[45] }]; #IO_L23P_T3_A03_D19_14 Sch=jc_p[4]
+set_property -dict { PACKAGE_PIN T13   IOSTANDARD LVCMOS33 } [get_ports { mprj_io[19] }]; #IO_L23P_T3_A03_D19_14 Sch=jc_p[4]
 # set_property -dict { PACKAGE_PIN U13   IOSTANDARD LVCMOS33 } [get_ports { pin_mux_io[46] }]; #IO_L23N_T3_A02_D18_14 Sch=jc_n[4]
 
 ## Pmod Header JD
@@ -122,10 +123,11 @@ set_property -dict { PACKAGE_PIN R17   IOSTANDARD LVCMOS33 } [get_ports { mprj_i
 set_property -dict { PACKAGE_PIN P17   IOSTANDARD LVCMOS33 } [get_ports { mprj_io[15] }]; #IO_L12P_T1_MRCC_14           Sch=ck_io[13]
 
 ## ChipKit Inner Digital Header
-set_property -dict { PACKAGE_PIN U11   IOSTANDARD LVCMOS33 } [get_ports { mprj_io[16] }]; #IO_L19N_T3_A09_D25_VREF_14 	Sch=ck_io[26]     #I2S SDI
-set_property -dict { PACKAGE_PIN V16   IOSTANDARD LVCMOS33 } [get_ports { mprj_io[17] }]; #IO_L16N_T2_A15_D31_14 		Sch=ck_io[27]        #PF0 wake 
-set_property -dict { PACKAGE_PIN M13   IOSTANDARD LVCMOS33 } [get_ports { mprj_io[18] }]; #IO_L6N_T0_D08_VREF_14 		Sch=ck_io[28]        #PE0 thsel 
-set_property -dict { PACKAGE_PIN R10   IOSTANDARD LVCMOS33 } [get_ports { mprj_io[19] }]; #IO_25_14 		 			Sch=ck_io[29]           #I2S WS
+# mprj_io[16:19] are routed to Pmod JC for the encoder.
+# set_property -dict { PACKAGE_PIN U11   IOSTANDARD LVCMOS33 } [get_ports { mprj_io[16] }]; #IO_L19N_T3_A09_D25_VREF_14 Sch=ck_io[26]
+# set_property -dict { PACKAGE_PIN V16   IOSTANDARD LVCMOS33 } [get_ports { mprj_io[17] }]; #IO_L16N_T2_A15_D31_14 Sch=ck_io[27]
+# set_property -dict { PACKAGE_PIN M13   IOSTANDARD LVCMOS33 } [get_ports { mprj_io[18] }]; #IO_L6N_T0_D08_VREF_14 Sch=ck_io[28]
+# set_property -dict { PACKAGE_PIN R10   IOSTANDARD LVCMOS33 } [get_ports { mprj_io[19] }]; #IO_25_14 Sch=ck_io[29]
 set_property -dict { PACKAGE_PIN R11   IOSTANDARD LVCMOS33 } [get_ports { mprj_io[20] }]; #IO_0_14  		 			Sch=ck_io[30]           #I2S SCK
 set_property -dict { PACKAGE_PIN R13   IOSTANDARD LVCMOS33 } [get_ports { mprj_io[21] }]; #IO_L5N_T0_D07_14 			Sch=ck_io[31]        #PD0 l/r
 set_property -dict { PACKAGE_PIN R15   IOSTANDARD LVCMOS33 } [get_ports { gpio }]; #IO_L13N_T2_MRCC_14 			Sch=ck_io[32]        #PB0

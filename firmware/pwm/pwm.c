@@ -13,9 +13,15 @@
 
 // Pmod 8LD on header JA: LD0-LD7 are mprj_io[28] through mprj_io[35],
 // which straddle the datal/datah register boundary at mprj_io[32].
-#define LED_BAR_MIN     0x01        //  500 usec, -180 deg
-#define LED_BAR_MID     0x0f        // 1500 usec,    0 deg
-#define LED_BAR_MAX     0xff        // 2500 usec,  180 deg
+// Pmod ENC on header JC: A, B, BTN, SWT are mprj_io[16] through mprj_io[19].
+#define ENC_BTN_MASK     (1u << 18)
+#define ENC_SWT_MASK     (1u << 19)
+#define SERVO_MIN_TICKS  6000
+#define SERVO_MID_TICKS  18000
+#define SERVO_MAX_TICKS  30000
+#define SERVO_STEP_TICKS 1500
+#define POLL_TICKS       12000       // 1 ms at 12 MHz
+#define AUTO_DWELL_POLLS 667         // approximately the original 8M-tick delay
 
 
 // --------------------------------------------------------
@@ -71,11 +77,10 @@ void configure_io()
     reg_mprj_io_13 = GPIO_MODE_MGMT_STD_OUTPUT;
     reg_mprj_io_14 = GPIO_MODE_MGMT_STD_OUTPUT;
     reg_mprj_io_15 = GPIO_MODE_MGMT_STD_OUTPUT;
-    reg_mprj_io_16 = GPIO_MODE_MGMT_STD_OUTPUT;
-    reg_mprj_io_17 = GPIO_MODE_MGMT_STD_OUTPUT;
-    reg_mprj_io_18 = GPIO_MODE_MGMT_STD_OUTPUT;
-
-    reg_mprj_io_19 = GPIO_MODE_MGMT_STD_OUTPUT;
+    reg_mprj_io_16 = GPIO_MODE_MGMT_STD_INPUT_PULLUP;    // Pmod ENC A
+    reg_mprj_io_17 = GPIO_MODE_MGMT_STD_INPUT_PULLUP;    // Pmod ENC B
+    reg_mprj_io_18 = GPIO_MODE_MGMT_STD_INPUT_PULLUP;    // Pmod ENC button
+    reg_mprj_io_19 = GPIO_MODE_MGMT_STD_INPUT_PULLUP;    // Pmod ENC switch
     reg_mprj_io_20 = GPIO_MODE_MGMT_STD_OUTPUT;
     reg_mprj_io_21 = GPIO_MODE_MGMT_STD_OUTPUT;
     reg_mprj_io_22 = GPIO_MODE_MGMT_STD_OUTPUT;
@@ -104,6 +109,32 @@ void led_bar(unsigned int bits)
 {
     reg_mprj_datal = (reg_mprj_datal & 0x0fffffff) | ((bits & 0x0f) << 28);
     reg_mprj_datah = (reg_mprj_datah & 0xfffffff0) | ((bits >> 4) & 0x0f);
+}
+
+unsigned int led_bar_for_ticks(int ticks)
+{
+    unsigned int level = 1;
+    int threshold = SERVO_MIN_TICKS + 3000;
+
+    while ((level < 8) && (ticks >= threshold)) {
+        level++;
+        threshold += 3000;
+    }
+
+    return (1u << level) - 1u;
+}
+
+int encoder_delta(unsigned int transition)
+{
+    // Index is previous AB in bits [3:2], current AB in bits [1:0].
+    switch (transition) {
+        case 0x1: case 0x7: case 0x8: case 0xe:
+            return -1;
+        case 0x2: case 0x4: case 0xb: case 0xd:
+            return 1;
+        default:
+            return 0;
+    }
 }
 
 void delay(const int d)
@@ -333,10 +364,24 @@ void config_pwm_ticks(int p0_ticks, int p1_ticks, int p2_ticks, int p3_ticks)
 
 }
 
+void set_servo_position(int ticks)
+{
+    config_pwm_ticks(ticks, ticks, ticks, ticks);
+    led_bar(led_bar_for_ticks(ticks));
+    reg_gpio_out = !reg_gpio_out;
+}
+
 void main()
 {
-	int i, j, k;
-
+    unsigned int inputs;
+    unsigned int ab;
+    unsigned int last_ab = 3;
+    unsigned int auto_pose = 0;
+    unsigned int auto_dwell = 0;
+    int quarter_steps = 0;
+    int ticks = SERVO_MID_TICKS;
+    int manual_mode;
+    int last_manual_mode = -1;
 
     reg_gpio_mode1 = 1;
     reg_gpio_mode0 = 0;
@@ -357,9 +402,6 @@ void main()
 
 //    print("Hello World !!\n");
 
-//	const int _DELAY_VALUE = 800000;
-	const int _DELAY_VALUE = 8000000;
-
     reg_gpio_out = 0; // ON
 
     // clock = 12MHz period = 83.33 nsec
@@ -370,31 +412,73 @@ void main()
     // cmpx = 24000 = 2000 usec    90 deg
     // cmpx = 30000 = 2500 usec   180 deg
 
+    set_servo_position(ticks);
+
 	while (1) {
+        inputs = reg_mprj_datal;
+        ab = (inputs >> 16) & 0x3;
 
-        reg_gpio_out = 1; // OFF
-        config_pwm_ticks(18000, 18000, 18000, 18000);
-        led_bar(LED_BAR_MID);
+        // SWT on selects interactive encoder mode; off preserves auto-sweep.
+        manual_mode = ((inputs & ENC_SWT_MASK) != 0);
+        if (manual_mode != last_manual_mode) {
+            last_manual_mode = manual_mode;
+            last_ab = ab;
+            quarter_steps = 0;
+            auto_dwell = 0;
 
-		delay(_DELAY_VALUE);
+            if (!manual_mode) {
+                auto_pose = 0;
+                ticks = SERVO_MID_TICKS;
+                set_servo_position(ticks);
+            }
+        }
 
-        reg_gpio_out = 0;  // ON
-        config_pwm_ticks(6000, 6000, 6000, 6000);
-        led_bar(LED_BAR_MIN);
+        if (manual_mode) {
+            // The shaft button is active low and recenters all four servos.
+            if ((inputs & ENC_BTN_MASK) == 0) {
+                quarter_steps = 0;
+                last_ab = ab;
+                if (ticks != SERVO_MID_TICKS) {
+                    ticks = SERVO_MID_TICKS;
+                    set_servo_position(ticks);
+                }
+            } else {
+                quarter_steps += encoder_delta((last_ab << 2) | ab);
+                last_ab = ab;
 
-		delay(_DELAY_VALUE);
+                if (quarter_steps >= 4) {
+                    quarter_steps = 0;
+                    if (ticks < SERVO_MAX_TICKS) {
+                        ticks += SERVO_STEP_TICKS;
+                        if (ticks > SERVO_MAX_TICKS)
+                            ticks = SERVO_MAX_TICKS;
+                        set_servo_position(ticks);
+                    }
+                } else if (quarter_steps <= -4) {
+                    quarter_steps = 0;
+                    if (ticks > SERVO_MIN_TICKS) {
+                        ticks -= SERVO_STEP_TICKS;
+                        if (ticks < SERVO_MIN_TICKS)
+                            ticks = SERVO_MIN_TICKS;
+                        set_servo_position(ticks);
+                    }
+                }
+            }
+        } else if (++auto_dwell >= AUTO_DWELL_POLLS) {
+            auto_dwell = 0;
+            auto_pose = (auto_pose + 1) & 0x3;
 
-        reg_gpio_out = 1; // OFF
-        config_pwm_ticks(18000, 18000, 18000, 18000);
-        led_bar(LED_BAR_MID);
+            if (auto_pose == 1)
+                ticks = SERVO_MIN_TICKS;
+            else if (auto_pose == 3)
+                ticks = SERVO_MAX_TICKS;
+            else
+                ticks = SERVO_MID_TICKS;
 
-		delay(_DELAY_VALUE);
+            set_servo_position(ticks);
+        }
 
-        reg_gpio_out = 0;  // ON
-        config_pwm_ticks(30000, 30000, 30000, 30000);
-        led_bar(LED_BAR_MAX);
-
-		delay(_DELAY_VALUE);
+		delay(POLL_TICKS);
     }
 
 
