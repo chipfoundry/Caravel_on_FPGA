@@ -25,6 +25,9 @@
 #define POLL_TICKS_MANUAL 12000      // 1 ms at 12 MHz
 #define POLL_TICKS_AUTO   400000     // 33 ms at 12 MHz
 #define AUTO_DWELL_POLLS  20         // 20 x 33 ms, as the original 8M-tick delay
+// With no encoder attached the switch pad floats, so only act on a reading
+// that has held steady across several polls.
+#define SWT_DEBOUNCE_POLLS 8
 
 
 // --------------------------------------------------------
@@ -80,12 +83,12 @@ void configure_io()
     reg_mprj_io_13 = GPIO_MODE_MGMT_STD_OUTPUT;
     reg_mprj_io_14 = GPIO_MODE_MGMT_STD_OUTPUT;
     reg_mprj_io_15 = GPIO_MODE_MGMT_STD_OUTPUT;
-    reg_mprj_io_16 = GPIO_MODE_MGMT_STD_INPUT_PULLUP;    // Pmod ENC A
-    reg_mprj_io_17 = GPIO_MODE_MGMT_STD_INPUT_PULLUP;    // Pmod ENC B
-    // BTN and SWT read low in their released/off state, so hold them down
-    // to keep the sweep running when no encoder is plugged in.
-    reg_mprj_io_18 = GPIO_MODE_MGMT_STD_INPUT_PULLDOWN;  // Pmod ENC button
-    reg_mprj_io_19 = GPIO_MODE_MGMT_STD_INPUT_PULLDOWN;  // Pmod ENC switch
+    // The Pmod ENC carries its own resistor network; an internal pull fights it
+    // hard enough that the pads never reach a valid level.
+    reg_mprj_io_16 = GPIO_MODE_MGMT_STD_INPUT_NOPULL;    // Pmod ENC A
+    reg_mprj_io_17 = GPIO_MODE_MGMT_STD_INPUT_NOPULL;    // Pmod ENC B
+    reg_mprj_io_18 = GPIO_MODE_MGMT_STD_INPUT_NOPULL;    // Pmod ENC button
+    reg_mprj_io_19 = GPIO_MODE_MGMT_STD_INPUT_NOPULL;    // Pmod ENC switch
     reg_mprj_io_20 = GPIO_MODE_MGMT_STD_OUTPUT;
     reg_mprj_io_21 = GPIO_MODE_MGMT_STD_OUTPUT;
     reg_mprj_io_22 = GPIO_MODE_MGMT_STD_OUTPUT;
@@ -383,6 +386,9 @@ void main()
     unsigned int last_ab = 3;
     unsigned int auto_pose = 0;
     unsigned int auto_dwell = 0;
+    unsigned int swt_raw;
+    unsigned int swt_settle = 0;
+    unsigned int swt = 0;
     int quarter_steps = 0;
     int ticks = SERVO_MID_TICKS;
     int manual_mode;
@@ -424,7 +430,15 @@ void main()
         ab = (inputs >> 16) & 0x3;
 
         // SWT on selects interactive encoder mode; off preserves auto-sweep.
-        manual_mode = ((inputs & ENC_SWT_MASK) != 0);
+        swt_raw = ((inputs & ENC_SWT_MASK) != 0);
+        if (swt_raw == swt) {
+            swt_settle = 0;
+        } else if (++swt_settle >= SWT_DEBOUNCE_POLLS) {
+            swt_settle = 0;
+            swt = swt_raw;
+        }
+
+        manual_mode = (int)swt;
         if (manual_mode != last_manual_mode) {
             last_manual_mode = manual_mode;
             last_ab = ab;
