@@ -80,15 +80,15 @@ set_property -dict { PACKAGE_PIN E15   IOSTANDARD LVCMOS33 } [get_ports { mprj_i
 # set_property -dict { PACKAGE_PIN J15   IOSTANDARD LVCMOS33 } [get_ports { pin_mux_io[37] }]; #IO_L24N_T3_RS0_15 Sch=jb_n[4]
 
 ## Pmod Header JC
-# Pmod ENC: A, B, BTN, SWT on JC pins 1-4
-set_property -dict { PACKAGE_PIN U12   IOSTANDARD LVCMOS33 } [get_ports { mprj_io[16] }]; #IO_L20P_T3_A08_D24_14 Sch=jc_p[1]
-# set_property -dict { PACKAGE_PIN V12   IOSTANDARD LVCMOS33 } [get_ports { pin_mux_io[39] }]; #IO_L20N_T3_A07_D23_14 Sch=jc_n[1]
-set_property -dict { PACKAGE_PIN V10   IOSTANDARD LVCMOS33 } [get_ports { mprj_io[17] }]; #IO_L21P_T3_DQS_14 Sch=jc_p[2]
-# set_property -dict { PACKAGE_PIN V11   IOSTANDARD LVCMOS33 } [get_ports { pin_mux_io[42] }]; #IO_L21N_T3_DQS_A06_D22_14 Sch=jc_n[2]
-set_property -dict { PACKAGE_PIN U14   IOSTANDARD LVCMOS33 } [get_ports { mprj_io[18] }]; #IO_L22P_T3_A05_D21_14 Sch=jc_p[3]
-# set_property -dict { PACKAGE_PIN V14   IOSTANDARD LVCMOS33 } [get_ports { pin_mux_io[44] }]; #IO_L22N_T3_A04_D20_14 Sch=jc_n[3]
-set_property -dict { PACKAGE_PIN T13   IOSTANDARD LVCMOS33 } [get_ports { mprj_io[19] }]; #IO_L23P_T3_A03_D19_14 Sch=jc_p[4]
-# set_property -dict { PACKAGE_PIN U13   IOSTANDARD LVCMOS33 } [get_ports { pin_mux_io[46] }]; #IO_L23N_T3_A02_D18_14 Sch=jc_n[4]
+# Pmod ENC on JC top row (pins 1-6). Bottom row is 7-12.
+set_property -dict { PACKAGE_PIN U12   IOSTANDARD LVCMOS33 } [get_ports { mprj_io[16] }]; # Sch=jc[1] ENC A
+set_property -dict { PACKAGE_PIN V12   IOSTANDARD LVCMOS33 } [get_ports { mprj_io[17] }]; # Sch=jc[2] ENC B
+set_property -dict { PACKAGE_PIN V10   IOSTANDARD LVCMOS33 } [get_ports { mprj_io[18] }]; # Sch=jc[3] ENC BTN
+set_property -dict { PACKAGE_PIN V11   IOSTANDARD LVCMOS33 } [get_ports { mprj_io[19] }]; # Sch=jc[4] ENC SWT
+# set_property -dict { PACKAGE_PIN U14   IOSTANDARD LVCMOS33 } [get_ports { pin_mux_io[43] }]; # Sch=jc[7]
+# set_property -dict { PACKAGE_PIN V14   IOSTANDARD LVCMOS33 } [get_ports { pin_mux_io[44] }]; # Sch=jc[8]
+# set_property -dict { PACKAGE_PIN T13   IOSTANDARD LVCMOS33 } [get_ports { pin_mux_io[45] }]; # Sch=jc[9]
+# set_property -dict { PACKAGE_PIN U13   IOSTANDARD LVCMOS33 } [get_ports { pin_mux_io[46] }]; # Sch=jc[10]
 
 ## Pmod Header JD
 #set_property CLOCK_DEDICATED_ROUTE FALSE [get_nets {tck_IBUF}]
