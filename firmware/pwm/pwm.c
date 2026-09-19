@@ -20,8 +20,11 @@
 #define SERVO_MID_TICKS  18000
 #define SERVO_MAX_TICKS  30000
 #define SERVO_STEP_TICKS 1500
-#define POLL_TICKS       12000       // 1 ms at 12 MHz
-#define AUTO_DWELL_POLLS 667         // approximately the original 8M-tick delay
+// Quadrature needs a fast poll, but the sweep only has to notice the switch,
+// so poll slowly there to keep the original dwell between poses.
+#define POLL_TICKS_MANUAL 12000      // 1 ms at 12 MHz
+#define POLL_TICKS_AUTO   400000     // 33 ms at 12 MHz
+#define AUTO_DWELL_POLLS  20         // 20 x 33 ms, as the original 8M-tick delay
 
 
 // --------------------------------------------------------
@@ -79,8 +82,10 @@ void configure_io()
     reg_mprj_io_15 = GPIO_MODE_MGMT_STD_OUTPUT;
     reg_mprj_io_16 = GPIO_MODE_MGMT_STD_INPUT_PULLUP;    // Pmod ENC A
     reg_mprj_io_17 = GPIO_MODE_MGMT_STD_INPUT_PULLUP;    // Pmod ENC B
-    reg_mprj_io_18 = GPIO_MODE_MGMT_STD_INPUT_PULLUP;    // Pmod ENC button
-    reg_mprj_io_19 = GPIO_MODE_MGMT_STD_INPUT_PULLUP;    // Pmod ENC switch
+    // BTN and SWT read low in their released/off state, so hold them down
+    // to keep the sweep running when no encoder is plugged in.
+    reg_mprj_io_18 = GPIO_MODE_MGMT_STD_INPUT_PULLDOWN;  // Pmod ENC button
+    reg_mprj_io_19 = GPIO_MODE_MGMT_STD_INPUT_PULLDOWN;  // Pmod ENC switch
     reg_mprj_io_20 = GPIO_MODE_MGMT_STD_OUTPUT;
     reg_mprj_io_21 = GPIO_MODE_MGMT_STD_OUTPUT;
     reg_mprj_io_22 = GPIO_MODE_MGMT_STD_OUTPUT;
@@ -434,8 +439,8 @@ void main()
         }
 
         if (manual_mode) {
-            // The shaft button is active low and recenters all four servos.
-            if ((inputs & ENC_BTN_MASK) == 0) {
+            // The shaft button is active high and recenters all four servos.
+            if ((inputs & ENC_BTN_MASK) != 0) {
                 quarter_steps = 0;
                 last_ab = ab;
                 if (ticks != SERVO_MID_TICKS) {
@@ -478,7 +483,7 @@ void main()
             set_servo_position(ticks);
         }
 
-		delay(POLL_TICKS);
+		delay(manual_mode ? POLL_TICKS_MANUAL : POLL_TICKS_AUTO);
     }
 
 
