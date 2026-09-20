@@ -1,0 +1,1131 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ChipFoundry — Caravel Demo Loop</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --ink: #f4f1e8;
+      --muted: #a9b3b0;
+      --dim: #66716f;
+      --panel: #151b1a;
+      --panel-2: #1b2321;
+      --line: #34413e;
+      --green: #a5dc5a;
+      --green-deep: #26381c;
+      --orange: #ffad5a;
+      --bg: #0b0f0e;
+      --scene-ms: 8000ms;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: .22;
+      background-image:
+        linear-gradient(var(--line) 1px, transparent 1px),
+        linear-gradient(90deg, var(--line) 1px, transparent 1px);
+      background-size: 72px 72px;
+      mask-image: linear-gradient(to bottom, black, transparent 86%);
+    }
+
+    button { font: inherit; }
+
+    .brand {
+      --logo-h: clamp(32px, 2.7vw, 52px);
+      position: fixed;
+      z-index: 20;
+      top: clamp(20px, 3vw, 48px);
+      left: clamp(24px, 4vw, 72px);
+      display: flex;
+      /* Logos are trimmed to their ink, so top-align and scale the second mark
+         by its x-height ratio to put both baselines on the same line. */
+      align-items: flex-start;
+      gap: 18px;
+    }
+
+    .brand img {
+      display: block;
+      width: auto;
+    }
+
+    .brand .logo-foundry { height: var(--logo-h); }
+    .brand .logo-ignite { height: calc(var(--logo-h) * 0.84); }
+
+    .brand-divider {
+      width: 1px;
+      height: calc(var(--logo-h) * 0.31);
+      margin-top: calc(var(--logo-h) * 0.35);
+      background: var(--line);
+    }
+
+    .scene {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      grid-template-columns: minmax(0, 1.05fr) minmax(420px, .95fr);
+      align-items: center;
+      gap: clamp(36px, 6vw, 110px);
+      padding: clamp(100px, 10vh, 150px) clamp(24px, 7vw, 132px) clamp(88px, 10vh, 130px);
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(16px);
+      transition: opacity 700ms ease, transform 700ms ease, visibility 0s linear 700ms;
+    }
+
+    .scene.active {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0);
+      transition-delay: 0s;
+    }
+
+    .scene.full {
+      grid-template-columns: 1fr;
+      text-align: center;
+      justify-items: center;
+    }
+
+    .eyebrow {
+      margin: 0 0 22px;
+      color: var(--green);
+      font: 700 clamp(12px, 1vw, 17px) / 1.2 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+    }
+
+    h1, h2 {
+      margin: 0;
+      max-width: 900px;
+      font-weight: 650;
+      letter-spacing: -.045em;
+      line-height: .98;
+      text-wrap: balance;
+    }
+
+    h1 { font-size: clamp(58px, 7.4vw, 138px); }
+    h2 { font-size: clamp(52px, 6.2vw, 112px); }
+
+    .lede {
+      max-width: 760px;
+      margin: 28px 0 0;
+      color: var(--muted);
+      font-size: clamp(20px, 1.65vw, 32px);
+      line-height: 1.42;
+      text-wrap: balance;
+    }
+
+    .accent { color: var(--green); }
+
+    .tag-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 36px;
+    }
+
+    .tag {
+      padding: 9px 13px;
+      border: 1px solid var(--line);
+      color: var(--muted);
+      font: 650 clamp(11px, .8vw, 14px) / 1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .visual {
+      position: relative;
+      min-height: min(58vh, 640px);
+      display: grid;
+      place-items: center;
+    }
+
+    /* Scene 1: board */
+    .board {
+      position: relative;
+      width: min(100%, 650px);
+      aspect-ratio: 1.45;
+      border: 2px solid #5f8154;
+      background: #152d24;
+      transform: rotate(-3deg);
+    }
+
+    .board::before, .board::after {
+      content: "";
+      position: absolute;
+      inset: 7%;
+      border: 1px solid #375748;
+    }
+
+    .board::after {
+      inset: 14% 9%;
+      border-style: dashed;
+      opacity: .7;
+    }
+
+    .fpga {
+      position: absolute;
+      z-index: 2;
+      left: 27%;
+      top: 21%;
+      width: 46%;
+      height: 58%;
+      display: grid;
+      place-items: center;
+      border: 9px double #59635e;
+      background: #101412;
+      color: var(--ink);
+      text-align: center;
+      font: 700 clamp(12px, 1.15vw, 19px) / 1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+
+    .fpga strong { color: var(--green); font-size: 1.35em; }
+
+    .pinbank {
+      position: absolute;
+      display: flex;
+      gap: 6px;
+    }
+
+    .pinbank span { width: 7px; height: 30px; background: #c9a74b; }
+    .pinbank.top { top: 5%; left: 27%; }
+    .pinbank.bottom { bottom: 5%; right: 11%; }
+    .status-led { position: absolute; width: 16px; height: 16px; border-radius: 50%; background: var(--green); animation: blink 1.2s steps(1) infinite; }
+    .status-led.one { right: 8%; top: 10%; }
+    .status-led.two { right: 13%; top: 10%; animation-delay: .25s; opacity: .5; }
+    .board-label { position: absolute; left: 5%; bottom: 6%; color: #86b38f; font: 700 14px/1 ui-monospace, monospace; letter-spacing: .12em; }
+
+    /* Scene 2: pipeline */
+    .pipeline {
+      width: 100%;
+      display: grid;
+      grid-template-columns: 1fr 50px 1fr;
+      gap: 18px 10px;
+      align-items: center;
+    }
+
+    .stage {
+      min-height: 102px;
+      padding: 22px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      display: flex;
+      align-items: center;
+      gap: 18px;
+    }
+
+    .stage-num {
+      color: var(--green);
+      font: 750 14px/1 ui-monospace, monospace;
+    }
+
+    .stage strong {
+      display: block;
+      margin-bottom: 5px;
+      font-size: clamp(18px, 1.4vw, 25px);
+    }
+
+    .stage small { color: var(--muted); font-size: clamp(13px, .9vw, 16px); }
+
+    .arrow {
+      height: 1px;
+      background: var(--green);
+      position: relative;
+    }
+
+    .arrow::after {
+      content: "";
+      position: absolute;
+      right: -1px;
+      top: -4px;
+      border: 5px solid transparent;
+      border-left-color: var(--green);
+    }
+
+    /* Scene 3: channels */
+    .channels { width: min(100%, 700px); }
+
+    .channel {
+      display: grid;
+      grid-template-columns: 58px 1fr 92px;
+      align-items: center;
+      gap: 18px;
+      margin: 22px 0;
+    }
+
+    .channel-label {
+      color: var(--muted);
+      font: 700 14px/1 ui-monospace, monospace;
+      letter-spacing: .08em;
+    }
+
+    .track {
+      height: 28px;
+      border: 1px solid var(--line);
+      padding: 5px;
+      background: var(--panel);
+    }
+
+    .pulse {
+      height: 100%;
+      width: 28%;
+      background: var(--green);
+      transform-origin: left;
+      animation: pulse-width 5.4s ease-in-out infinite alternate;
+    }
+
+    .channel:nth-child(2) .pulse { animation-delay: -.7s; }
+    .channel:nth-child(3) .pulse { animation-delay: -1.4s; }
+    .channel:nth-child(4) .pulse { animation-delay: -2.1s; }
+
+    .readout {
+      color: var(--green);
+      font: 700 clamp(13px, 1vw, 17px) / 1 ui-monospace, monospace;
+      text-align: right;
+    }
+
+    .range {
+      display: flex;
+      justify-content: space-between;
+      margin-left: 76px;
+      color: var(--dim);
+      font: 12px/1 ui-monospace, monospace;
+    }
+
+    /* Scene 4: encoder */
+    .encoder-wrap {
+      width: min(100%, 620px);
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 34px;
+      align-items: center;
+    }
+
+    .encoder {
+      position: relative;
+      width: min(26vw, 290px);
+      aspect-ratio: 1;
+      margin: auto;
+      border-radius: 50%;
+      border: 2px solid var(--line);
+      background: var(--panel);
+    }
+
+    .encoder::before {
+      content: "";
+      position: absolute;
+      inset: 18%;
+      border-radius: 50%;
+      border: 4px solid #74807c;
+      background: #2b3432;
+    }
+
+    .encoder::after {
+      content: "";
+      position: absolute;
+      left: 49%;
+      top: 2%;
+      width: 3px;
+      height: 19%;
+      background: var(--green);
+      transform-origin: 50% 253%;
+      animation: rotate-knob 4s ease-in-out infinite alternate;
+    }
+
+    .mode-switch {
+      margin: 28px auto 0;
+      width: 168px;
+      padding: 9px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--muted);
+      font: 700 12px/1 ui-monospace, monospace;
+      text-align: center;
+      letter-spacing: .1em;
+    }
+
+    .mode-switch strong { color: var(--green); }
+
+    .steps { display: grid; gap: 20px; }
+
+    .step {
+      display: grid;
+      grid-template-columns: 38px 1fr;
+      gap: 14px;
+      align-items: baseline;
+    }
+
+    .step b {
+      color: var(--green);
+      font: 700 15px/1 ui-monospace, monospace;
+    }
+
+    .step strong { font-size: clamp(19px, 1.5vw, 27px); }
+    .step span { display: block; margin-top: 5px; color: var(--muted); font-size: clamp(14px, 1vw, 17px); }
+
+    /* AFE reference */
+    .afe-chain {
+      width: 100%;
+      display: grid;
+      grid-template-columns: 1fr 28px 1fr 28px 1fr 28px 1fr;
+      gap: 8px;
+      align-items: stretch;
+    }
+
+    .afe-block {
+      min-height: 168px;
+      padding: 20px 16px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+    }
+
+    .afe-block b {
+      display: block;
+      margin-bottom: 10px;
+      color: var(--green);
+      font: 700 12px/1 ui-monospace, monospace;
+      letter-spacing: .1em;
+    }
+
+    .afe-block strong {
+      display: block;
+      margin-bottom: 8px;
+      font-size: clamp(16px, 1.25vw, 22px);
+    }
+
+    .afe-block span {
+      color: var(--muted);
+      font-size: clamp(13px, .9vw, 15px);
+      line-height: 1.35;
+    }
+
+    .afe-arrow {
+      align-self: center;
+      height: 1px;
+      background: var(--green);
+      position: relative;
+    }
+
+    .afe-arrow::after {
+      content: "";
+      position: absolute;
+      right: -1px;
+      top: -4px;
+      border: 5px solid transparent;
+      border-left-color: var(--green);
+    }
+
+    .ip-grid {
+      width: 100%;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .ip-card {
+      padding: 22px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+    }
+
+    .ip-card b {
+      display: block;
+      margin-bottom: 8px;
+      color: var(--green);
+      font: 700 13px/1 ui-monospace, monospace;
+      letter-spacing: .06em;
+    }
+
+    .ip-card span {
+      color: var(--muted);
+      font-size: clamp(14px, 1.05vw, 18px);
+      line-height: 1.35;
+    }
+
+    .value-stack {
+      width: min(100%, 620px);
+      display: grid;
+      gap: 14px;
+    }
+
+    .value-step {
+      display: grid;
+      grid-template-columns: 72px 1fr;
+      gap: 18px;
+      align-items: center;
+      min-height: 108px;
+      padding: 22px 24px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+    }
+
+    .value-step b {
+      color: var(--green);
+      font: 750 15px/1 ui-monospace, monospace;
+      letter-spacing: .12em;
+    }
+
+    .value-step strong {
+      display: block;
+      margin-bottom: 6px;
+      font-size: clamp(20px, 1.6vw, 28px);
+    }
+
+    .value-step span {
+      color: var(--muted);
+      font-size: clamp(14px, 1.05vw, 18px);
+      line-height: 1.35;
+    }
+
+    .builder-demo {
+      width: min(100%, 700px);
+      overflow: hidden;
+      border: 1px solid #d7dce4;
+      border-radius: 10px;
+      background: #f7f8fa;
+      color: #182033;
+      font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+    }
+
+    .builder-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 13px 16px;
+      background: #1853b5;
+      color: white;
+    }
+
+    .builder-bar strong { font-size: 15px; }
+    .builder-bar span { font-size: 10px; opacity: .78; letter-spacing: .08em; text-transform: uppercase; }
+
+    .builder-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.18fr) minmax(190px, .82fr);
+      gap: 14px;
+      padding: 14px;
+    }
+
+    .builder-panel {
+      border: 1px solid #dfe3ea;
+      border-radius: 7px;
+      background: white;
+      overflow: hidden;
+    }
+
+    .builder-panel-title {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      padding: 11px 12px 8px;
+      border-bottom: 1px solid #e7e9ee;
+    }
+
+    .builder-panel-title strong { font-size: 12px; }
+    .builder-panel-title span { color: #687287; font-size: 9px; }
+
+    .builder-row {
+      position: relative;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 8px;
+      min-height: 70px;
+      padding: 9px 10px;
+      border-bottom: 1px solid #eceef2;
+      transition: background 260ms ease;
+    }
+
+    .builder-row:last-child { border-bottom: 0; }
+    .builder-row.selected { background: #f0fdf4; }
+
+    .builder-row strong {
+      display: block;
+      overflow: hidden;
+      color: #20293b;
+      font-size: 11px;
+      line-height: 1.2;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .builder-meta {
+      display: flex;
+      gap: 5px;
+      margin-top: 6px;
+      color: #6b7280;
+      font: 8px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+
+    .builder-tier {
+      padding: 2px 4px;
+      border-radius: 3px;
+      background: #eef2ff;
+      color: #3730a3;
+      font-weight: 700;
+    }
+
+    .builder-add {
+      min-width: 49px;
+      padding: 6px 7px;
+      border: 0;
+      border-radius: 4px;
+      background: #2563eb;
+      color: white;
+      font-size: 9px;
+      font-weight: 700;
+      text-align: center;
+      transition: transform 160ms ease, background 160ms ease;
+    }
+
+    .builder-row.selecting .builder-add { transform: scale(.9); }
+    .builder-row.selected .builder-add { background: #dcfce7; color: #166534; }
+
+    .builder-summary {
+      padding: 10px 11px 12px;
+      border-top: 1px solid #e7e9ee;
+      background: #fbfcfd;
+    }
+
+    .builder-summary-line {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      color: #667085;
+      font-size: 9px;
+      line-height: 1.7;
+    }
+
+    .builder-summary-line b { color: #172033; }
+    .builder-summary-line.total { margin-top: 4px; padding-top: 5px; border-top: 1px solid #dfe3ea; }
+    .builder-summary-line.total b { color: #1853b5; font-size: 14px; }
+
+    .builder-map-wrap { padding: 11px; }
+
+    .builder-map-head {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 7px;
+      color: #667085;
+      font-size: 9px;
+    }
+
+    .builder-map {
+      position: relative;
+      width: min(100%, 205px);
+      aspect-ratio: 2920 / 3520;
+      margin: 0 auto;
+      overflow: hidden;
+      border: 1px solid #334155;
+      background:
+        repeating-linear-gradient(135deg, transparent 0 9px, #e8edf4 9px 11px),
+        #f8fafc;
+    }
+
+    .builder-block {
+      position: absolute;
+      top: 0;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      border: 1px solid #3b82f6;
+      border-radius: 2px;
+      background: #dbeafe;
+      color: #1e3a8a;
+      font: 700 6px/1 ui-monospace, monospace;
+      opacity: 0;
+      transform: translateY(-8px) scale(.92);
+      transition: opacity 360ms ease, transform 360ms ease;
+    }
+
+    .builder-block.selected { opacity: 1; transform: translateY(0) scale(1); }
+    .builder-block.adc { left: 0; width: 18%; height: 15%; }
+    .builder-block.hiz { left: 19%; width: 12%; height: 11%; }
+    .builder-block.bgr { left: 32%; width: 17%; height: 10%; }
+    .builder-block.ref { left: 50%; width: 8%; height: 6%; }
+
+    .builder-caption {
+      padding: 9px 12px;
+      border-top: 1px solid #dfe3ea;
+      color: #687287;
+      font: 8px/1.35 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      letter-spacing: .03em;
+    }
+
+    /* Close */
+    .closing {
+      max-width: 1260px;
+      margin: auto;
+    }
+
+    .closing h2 { max-width: 1200px; }
+
+    .proof-row {
+      width: min(100%, 1100px);
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1px;
+      margin-top: 52px;
+      background: var(--line);
+      border: 1px solid var(--line);
+      text-align: left;
+    }
+
+    .proof {
+      padding: clamp(22px, 2.5vw, 42px);
+      background: var(--panel);
+    }
+
+    .proof b {
+      display: block;
+      margin-bottom: 10px;
+      color: var(--green);
+      font: 700 clamp(12px, .9vw, 15px) / 1 ui-monospace, monospace;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+    }
+
+    .proof span { font-size: clamp(17px, 1.3vw, 24px); line-height: 1.35; }
+
+    .footer {
+      position: fixed;
+      z-index: 20;
+      left: clamp(24px, 4vw, 72px);
+      right: clamp(24px, 4vw, 72px);
+      bottom: clamp(18px, 3vh, 36px);
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 28px;
+      align-items: center;
+    }
+
+    .progress {
+      height: 2px;
+      background: var(--line);
+      overflow: hidden;
+    }
+
+    .progress i {
+      display: block;
+      height: 100%;
+      width: 0;
+      background: var(--green);
+    }
+
+    body.running .progress i { animation: progress var(--scene-ms) linear forwards; }
+
+    .counter {
+      color: var(--dim);
+      font: 700 12px/1 ui-monospace, monospace;
+      letter-spacing: .12em;
+    }
+
+    .controls {
+      position: fixed;
+      z-index: 30;
+      right: 24px;
+      top: 24px;
+      display: flex;
+      gap: 8px;
+      opacity: 0;
+      transition: opacity 200ms ease;
+    }
+
+    body:hover .controls, .controls:focus-within { opacity: 1; }
+
+    .controls button {
+      width: 40px;
+      height: 40px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--muted);
+      cursor: pointer;
+    }
+
+    .controls button:hover { color: var(--ink); border-color: var(--muted); }
+
+    @keyframes blink { 50% { opacity: .18; } }
+    @keyframes pulse-width { from { width: 24%; } to { width: 82%; } }
+    @keyframes rotate-knob { from { transform: rotate(-110deg); } to { transform: rotate(110deg); } }
+    @keyframes progress { from { width: 0; } to { width: 100%; } }
+
+    @media (max-aspect-ratio: 4/3), (max-width: 900px) {
+      .scene {
+        grid-template-columns: 1fr;
+        align-content: center;
+        gap: 28px;
+        padding-top: 100px;
+      }
+      .visual { min-height: 34vh; }
+      .board { width: min(72vw, 540px); }
+      .encoder { width: min(34vw, 260px); }
+      .afe-chain { grid-template-columns: 1fr 1fr; }
+      .afe-arrow { display: none; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: 1ms !important; transition-duration: 1ms !important; }
+    }
+  </style>
+</head>
+<body class="running">
+  <header class="brand">
+    <img class="logo-foundry" src="img/chipfoundry-white.png" alt="ChipFoundry">
+    <span class="brand-divider" aria-hidden="true"></span>
+    <img class="logo-ignite" src="img/chipignite-white.png" alt="chipIgnite">
+  </header>
+
+  <main>
+    <section class="scene active" aria-hidden="false">
+      <div>
+        <p class="eyebrow">chipIgnite · ChipFoundry shuttle</p>
+        <h1>Make your<br><span class="accent">own chip.</span></h1>
+        <p class="lede">chipIgnite is how a team goes from a user project to packaged silicon. You own the design. Caravel, the analog catalog, and the shuttle are the path.</p>
+        <div class="tag-row">
+          <span class="tag">chipIgnite</span>
+          <span class="tag">Your user project</span>
+          <span class="tag">Caravel</span>
+          <span class="tag">Shuttle</span>
+        </div>
+      </div>
+      <div class="visual" aria-hidden="true">
+        <div class="value-stack">
+          <div class="value-step"><b>01</b><div><strong>Design</strong><span>Start from Caravel. Your RTL and analog sit in the user area.</span></div></div>
+          <div class="value-step"><b>02</b><div><strong>Integrate</strong><span>Drop in catalog IP — buffers, bandgap, SAR, timers — over Wishbone.</span></div></div>
+          <div class="value-step"><b>03</b><div><strong>Fabricate</strong><span>Submit to a ChipFoundry shuttle. You get die, not a slideshow.</span></div></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="scene" aria-hidden="true">
+      <div>
+        <p class="eyebrow">Optional · SoC Builder</p>
+        <h2>Want it assembled?<br><span class="accent">We can build it.</span></h2>
+        <p class="lede">SoC Builder is optional. Bring your own RTL, or pick catalog IP and have ChipFoundry assemble the Caravel user area to your spec — 39 blocks today, digital and analog, placed to scale.</p>
+        <div class="tag-row">
+          <span class="tag">Optional service</span>
+          <span class="tag">builder.chipfoundry.io</span>
+        </div>
+      </div>
+      <div class="visual">
+        <div class="builder-demo" data-builder-demo aria-label="Animated SoC Builder selection of four analog IP blocks">
+          <div class="builder-bar">
+            <strong>chipIgnite SoC Builder</strong>
+            <span>Analog &amp; Mixed-Signal</span>
+          </div>
+          <div class="builder-grid">
+            <div class="builder-panel">
+              <div class="builder-panel-title">
+                <strong>IP Catalog</strong>
+                <span>13 analog blocks</span>
+              </div>
+              <div class="builder-row" data-builder-row="hiz">
+                <div>
+                  <strong>High-Impedance Input Buffer</strong>
+                  <div class="builder-meta"><span>CF_BUF_HIZ</span><span class="builder-tier">T1</span><span>$18,500</span></div>
+                </div>
+                <span class="builder-add">+ Add</span>
+              </div>
+              <div class="builder-row" data-builder-row="adc">
+                <div>
+                  <strong>12-bit SAR ADC</strong>
+                  <div class="builder-meta"><span>CF_ADC_SAR12</span><span class="builder-tier">T1</span><span>$33,900</span></div>
+                </div>
+                <span class="builder-add">+ Add</span>
+              </div>
+              <div class="builder-row" data-builder-row="bgr">
+                <div>
+                  <strong>Bandgap Voltage/Current Reference</strong>
+                  <div class="builder-meta"><span>CF_BGR</span><span class="builder-tier">T3</span><span>$7,700</span></div>
+                </div>
+                <span class="builder-add">+ Add</span>
+              </div>
+              <div class="builder-row" data-builder-row="ref">
+                <div>
+                  <strong>1 V / 1.2 V Reference Buffer</strong>
+                  <div class="builder-meta"><span>CF_REFBUF</span><span class="builder-tier">T5</span><span>$3,100</span></div>
+                </div>
+                <span class="builder-add">+ Add</span>
+              </div>
+            </div>
+            <div class="builder-panel">
+              <div class="builder-panel-title">
+                <strong>Selected IP</strong>
+                <span><b data-builder-count>0</b> / 4</span>
+              </div>
+              <div class="builder-map-wrap">
+                <div class="builder-map-head"><span>User Area Map</span><span data-builder-util>0.0%</span></div>
+                <div class="builder-map">
+                  <div class="builder-block adc" data-builder-block="adc">SAR12</div>
+                  <div class="builder-block hiz" data-builder-block="hiz">HIZ</div>
+                  <div class="builder-block bgr" data-builder-block="bgr">BGR</div>
+                  <div class="builder-block ref" data-builder-block="ref"></div>
+                </div>
+              </div>
+              <div class="builder-summary">
+                <div class="builder-summary-line"><span>IP license cost</span><b data-builder-license>$0</b></div>
+                <div class="builder-summary-line"><span>Integration fee</span><b data-builder-integration>$0</b></div>
+                <div class="builder-summary-line total"><span>Total project cost</span><b data-builder-total>$14,950</b></div>
+              </div>
+            </div>
+          </div>
+          <div class="builder-caption">Live configuration preview · T1 group pricing caps at $42,900 · area map drawn to scale</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="scene" aria-hidden="true">
+      <div>
+        <p class="eyebrow">What your analog project can be</p>
+        <h2>Sense. Condition.<br><span class="accent">Digitize.</span></h2>
+        <p class="lede">cf-sensor-afe is a chipIgnite reference: a high-Z sensor, on-die conditioning, and a 12-bit code to firmware — on the same die as the RISC-V CPU. That is a user project, not an eval board full of analog chips.</p>
+      </div>
+      <div class="visual">
+        <div class="afe-chain" aria-label="Sensor analog front-end chain">
+          <div class="afe-block"><b>01</b><strong>Sensor</strong><span>High-impedance pads on GPIO 8–13</span></div>
+          <div class="afe-arrow"></div>
+          <div class="afe-block"><b>02</b><strong>CF_BUF_HIZ</strong><span>On-die buffer. The sensor never drives a 50 Ω trace.</span></div>
+          <div class="afe-arrow"></div>
+          <div class="afe-block"><b>03</b><strong>CF_ADC_SAR12</strong><span>12-bit SAR at 1 Msps, referenced from an on-die bandgap</span></div>
+          <div class="afe-arrow"></div>
+          <div class="afe-block"><b>04</b><strong>Firmware</strong><span>Wishbone CSR. 12-bit code on UART.</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="scene" aria-hidden="true">
+      <div>
+        <p class="eyebrow">Four analog macros, one wrapper</p>
+        <h2>A wired example,<br><span class="accent">not a datasheet.</span></h2>
+        <p class="lede">Shared supplies, GPIO analog defaults, PDN wrap, and firmware that actually converts. That is what an integrator needs from the analog catalog.</p>
+      </div>
+      <div class="visual">
+        <div class="ip-grid" aria-label="Catalog IPs in the sensor AFE">
+          <div class="ip-card"><b>CF_BUF_HIZ</b><span>High-Z sensor input buffer</span></div>
+          <div class="ip-card"><b>CF_BGR</b><span>Bandgap bias and 1.2 V reference</span></div>
+          <div class="ip-card"><b>CF_ADC_SAR12</b><span>12-bit SAR plus wrapped references</span></div>
+          <div class="ip-card"><b>CF_REFBUF</b><span>Buffered Vout monitor on GPIO 14</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="scene" aria-hidden="true">
+      <div>
+        <p class="eyebrow">On this table · FPGA prototype</p>
+        <h2>Software becomes <span class="accent">movement.</span></h2>
+        <p class="lede">Before tapeout, the same Caravel firmware and Wishbone path run on FPGA. This table is a user project you can touch: four servos, live GPIO.</p>
+      </div>
+      <div class="visual">
+        <div class="pipeline" aria-label="Firmware to servo signal path">
+          <div class="stage"><span class="stage-num">01</span><div><strong>C firmware</strong><small>Runs on the VexRiscv management CPU</small></div></div>
+          <div class="arrow"></div>
+          <div class="stage"><span class="stage-num">02</span><div><strong>Wishbone bus</strong><small>Memory-mapped control registers</small></div></div>
+          <div></div><div></div><div></div>
+          <div class="stage"><span class="stage-num">03</span><div><strong>32-bit timers</strong><small>Four independent PWM channels</small></div></div>
+          <div class="arrow"></div>
+          <div class="stage"><span class="stage-num">04</span><div><strong>SG90 servos</strong><small>Digital intent becomes physical motion</small></div></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="scene" aria-hidden="true">
+      <div>
+        <p class="eyebrow">Four hardware channels</p>
+        <h2>Precise pulses.<br><span class="accent">Visible results.</span></h2>
+        <p class="lede">Each timer produces a 50 Hz servo signal. Pulse width sets position from one end of travel to the other.</p>
+      </div>
+      <div class="visual">
+        <div class="channels" aria-label="Four animated PWM channels">
+          <div class="channel"><span class="channel-label">PWM 0</span><div class="track"><div class="pulse"></div></div><span class="readout">0.5–2.5 ms</span></div>
+          <div class="channel"><span class="channel-label">PWM 1</span><div class="track"><div class="pulse"></div></div><span class="readout">0.5–2.5 ms</span></div>
+          <div class="channel"><span class="channel-label">PWM 2</span><div class="track"><div class="pulse"></div></div><span class="readout">0.5–2.5 ms</span></div>
+          <div class="channel"><span class="channel-label">PWM 3</span><div class="track"><div class="pulse"></div></div><span class="readout">0.5–2.5 ms</span></div>
+          <div class="range"><span>MINIMUM</span><span>50 Hz FRAME</span><span>MAXIMUM</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="scene" aria-hidden="true">
+      <div>
+        <p class="eyebrow">Try the live demo</p>
+        <h2>You are now<br><span class="accent">in control.</span></h2>
+        <p class="lede">The encoder feeds Caravel’s GPIO. Firmware decodes each turn and updates all four hardware timers.</p>
+      </div>
+      <div class="visual">
+        <div class="encoder-wrap">
+          <div>
+            <div class="encoder" aria-hidden="true"></div>
+            <div class="mode-switch">SWITCH: <strong>ENCODER</strong></div>
+          </div>
+          <div class="steps">
+            <div class="step"><b>01</b><div><strong>Flip the switch</strong><span>Change from auto-sweep to manual mode.</span></div></div>
+            <div class="step"><b>02</b><div><strong>Turn the knob</strong><span>Move all four servos together.</span></div></div>
+            <div class="step"><b>03</b><div><strong>Press to center</strong><span>Return every channel to neutral.</span></div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="scene full" aria-hidden="true">
+      <div class="closing">
+        <p class="eyebrow">chipIgnite</p>
+        <h2>Your design.<br><span class="accent">Your die.</span></h2>
+        <p class="lede" style="margin-inline:auto">Prove it on FPGA. Compose analog from the catalog — yourself, or with optional SoC Builder. Submit to a ChipFoundry shuttle. That is making your own chip.</p>
+      </div>
+      <div class="proof-row">
+        <div class="proof"><b>You own it</b><span>The user project is yours — digital, analog, or mixed-signal.</span></div>
+        <div class="proof"><b>We provide the path</b><span>Caravel, catalog IP, tools, and a scheduled shuttle.</span></div>
+        <div class="proof"><b>Silicon comes back</b><span>Packaged parts and an eval board, not a paper study.</span></div>
+      </div>
+    </section>
+  </main>
+
+  <div class="controls" aria-label="Presentation controls">
+    <button id="previous" type="button" aria-label="Previous scene">←</button>
+    <button id="toggle" type="button" aria-label="Pause presentation">Ⅱ</button>
+    <button id="next" type="button" aria-label="Next scene">→</button>
+    <button id="fullscreen" type="button" aria-label="Enter fullscreen">⛶</button>
+  </div>
+
+  <footer class="footer">
+    <div class="progress" aria-hidden="true"><i></i></div>
+    <div class="counter"><span id="current">01</span> / <span id="total">05</span></div>
+  </footer>
+
+  <script>
+    (() => {
+      const scenes = [...document.querySelectorAll(".scene")];
+      const current = document.querySelector("#current");
+      const total = document.querySelector("#total");
+      const toggle = document.querySelector("#toggle");
+      const duration = Math.max(4, Number(new URLSearchParams(location.search).get("seconds")) || 8) * 1000;
+      let index = 0;
+      let timer = null;
+      let playing = true;
+      let builderTimers = [];
+
+      const builderSteps = [
+        { key: "hiz", area: "1.0%", license: 18500, integration: 9250, total: 42700 },
+        { key: "adc", area: "3.6%", license: 42900, integration: 21450, total: 79300 },
+        { key: "bgr", area: "5.0%", license: 50600, integration: 25300, total: 90850 },
+        { key: "ref", area: "5.2%", license: 53700, integration: 26850, total: 95500 },
+      ];
+
+      document.documentElement.style.setProperty("--scene-ms", `${duration}ms`);
+      total.textContent = String(scenes.length).padStart(2, "0");
+
+      function money(value) {
+        return `$${value.toLocaleString("en-US")}`;
+      }
+
+      function updateBuilder(demo, step) {
+        demo.querySelectorAll("[data-builder-row]").forEach((row, rowIndex) => {
+          const selected = rowIndex < step;
+          row.classList.toggle("selected", selected);
+          row.classList.remove("selecting");
+          row.querySelector(".builder-add").textContent = selected ? "Added" : "+ Add";
+        });
+
+        demo.querySelectorAll("[data-builder-block]").forEach(block => {
+          const selected = builderSteps.slice(0, step).some(item => item.key === block.dataset.builderBlock);
+          block.classList.toggle("selected", selected);
+        });
+
+        const values = step === 0
+          ? { area: "0.0%", license: 0, integration: 0, total: 14950 }
+          : builderSteps[step - 1];
+        demo.querySelector("[data-builder-count]").textContent = step;
+        demo.querySelector("[data-builder-util]").textContent = values.area;
+        demo.querySelector("[data-builder-license]").textContent = money(values.license);
+        demo.querySelector("[data-builder-integration]").textContent = money(values.integration);
+        demo.querySelector("[data-builder-total]").textContent = money(values.total);
+      }
+
+      function startBuilderDemo(scene) {
+        builderTimers.forEach(clearTimeout);
+        builderTimers = [];
+        const demo = scene.querySelector("[data-builder-demo]");
+        if (!demo) return;
+
+        updateBuilder(demo, 0);
+        builderSteps.forEach((step, stepIndex) => {
+          const selectTimer = setTimeout(() => {
+            demo.querySelector(`[data-builder-row="${step.key}"]`).classList.add("selecting");
+            const commitTimer = setTimeout(() => updateBuilder(demo, stepIndex + 1), 180);
+            builderTimers.push(commitTimer);
+          }, 650 + stepIndex * 1100);
+          builderTimers.push(selectTimer);
+        });
+      }
+
+      function restartProgress() {
+        document.body.classList.remove("running");
+        void document.body.offsetWidth;
+        if (playing) document.body.classList.add("running");
+      }
+
+      function schedule() {
+        clearTimeout(timer);
+        if (playing) timer = setTimeout(() => show(index + 1), duration);
+      }
+
+      function show(nextIndex) {
+        index = (nextIndex + scenes.length) % scenes.length;
+        scenes.forEach((scene, sceneIndex) => {
+          const active = sceneIndex === index;
+          scene.classList.toggle("active", active);
+          scene.setAttribute("aria-hidden", String(!active));
+        });
+        current.textContent = String(index + 1).padStart(2, "0");
+        startBuilderDemo(scenes[index]);
+        restartProgress();
+        schedule();
+      }
+
+      function setPlaying(next) {
+        playing = next;
+        toggle.textContent = playing ? "Ⅱ" : "▶";
+        toggle.setAttribute("aria-label", playing ? "Pause presentation" : "Play presentation");
+        document.body.classList.toggle("running", playing);
+        schedule();
+      }
+
+      document.querySelector("#previous").addEventListener("click", () => show(index - 1));
+      document.querySelector("#next").addEventListener("click", () => show(index + 1));
+      toggle.addEventListener("click", () => setPlaying(!playing));
+      document.querySelector("#fullscreen").addEventListener("click", () => {
+        if (!document.fullscreenElement) document.documentElement.requestFullscreen?.();
+        else document.exitFullscreen?.();
+      });
+
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "ArrowRight" || event.key === "PageDown") show(index + 1);
+        if (event.key === "ArrowLeft" || event.key === "PageUp") show(index - 1);
+        if (event.key === " " || event.key.toLowerCase() === "p") {
+          event.preventDefault();
+          setPlaying(!playing);
+        }
+        if (event.key.toLowerCase() === "f") document.querySelector("#fullscreen").click();
+      });
+
+      schedule();
+    })();
+  </script>
+</body>
+</html>
