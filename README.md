@@ -1,5 +1,10 @@
 # Caravel_on_FPGA
 In this repo you will be shown how to implement Cravel on FPGA and use its debug interface to debug a program running on Caravel's management SoC using GDB.
+
+## Booth display loop
+
+The chipIgnite kiosk page lives in [`display/`](display/). Open `display/index.html` in a browser, or see [display/README.md](display/README.md) for the local HTTP server and keyboard shortcuts.
+
 ## Hardware Tools used:
 * Cmod Artix 7-35T
 * QSPI SST26VF080A Flash module
