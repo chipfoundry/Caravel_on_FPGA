@@ -663,12 +663,20 @@
     }
 
     .builder-block.selected { opacity: 1; transform: translateY(0) scale(1); }
-    .builder-block.adc { left: 0; width: 18%; height: 15%; }
-    .builder-block.hiz { left: 19%; width: 12%; height: 11%; }
-    .builder-block.bgr { left: 32%; width: 17%; height: 10%; }
-    .builder-block.ref { left: 50%; width: 8%; height: 6%; }
-    .builder-block.sram-one { top: 18%; left: 0; width: 23.3%; height: 46.3%; }
-    .builder-block.sram-two { top: 18%; left: 25%; width: 23.3%; height: 46.3%; }
+    .builder-block.sram {
+      border-color: #fb7185;
+      background: #fecdd3;
+      color: #9f1239;
+    }
+    /* Shelf-packed like builder.chipfoundry.io: four 680×1630 µm SRAMs, then analog. */
+    .builder-block.adc { top: 47.4%; left: 0; width: 17.2%; height: 15.1%; }
+    .builder-block.hiz { top: 47.4%; left: 18.6%; width: 8.4%; height: 11.9%; }
+    .builder-block.bgr { top: 47.4%; left: 28.4%; width: 15.0%; height: 8.8%; }
+    .builder-block.ref { top: 47.4%; left: 44.8%; width: 5.2%; height: 5.0%; }
+    .builder-block.sram-one { top: 0; left: 0; width: 23.3%; height: 46.3%; }
+    .builder-block.sram-two { top: 0; left: 24.7%; width: 23.3%; height: 46.3%; }
+    .builder-block.sram-three { top: 0; left: 49.3%; width: 23.3%; height: 46.3%; }
+    .builder-block.sram-four { top: 0; left: 74.0%; width: 23.3%; height: 46.3%; }
 
     .builder-caption {
       padding: 13px 18px;
@@ -864,7 +872,7 @@
         </div>
       </div>
       <div class="visual">
-        <div class="builder-demo" data-builder-demo aria-label="Animated SoC Builder selection of four analog IP blocks and two 32KB SRAM instances">
+        <div class="builder-demo" data-builder-demo aria-label="Animated SoC Builder selection of four analog IP blocks and four 32KB SRAM instances">
           <div class="builder-bar">
             <strong>chipIgnite SoC Builder</strong>
             <span>Analog · Mixed-Signal · Memory</span>
@@ -874,6 +882,13 @@
               <div class="builder-panel-title">
                 <strong>IP Catalog</strong>
                 <span>39 catalog blocks</span>
+              </div>
+              <div class="builder-row" data-builder-row="sram">
+                <div>
+                  <strong>Commercial 32KB SRAM</strong>
+                  <div class="builder-meta"><span>CF_SRAM_8192x32</span><span>$2,500 / project</span></div>
+                </div>
+                <span class="builder-add">+ Add</span>
               </div>
               <div class="builder-row" data-builder-row="hiz">
                 <div>
@@ -903,18 +918,11 @@
                 </div>
                 <span class="builder-add">+ Add</span>
               </div>
-              <div class="builder-row" data-builder-row="sram">
-                <div>
-                  <strong>Commercial 32KB SRAM</strong>
-                  <div class="builder-meta"><span>CF_SRAM_8192x32</span><span>$2,500 / project</span></div>
-                </div>
-                <span class="builder-add">+ Add</span>
-              </div>
             </div>
             <div class="builder-panel">
               <div class="builder-panel-title">
                 <strong>Selected IP</strong>
-                <span><b data-builder-count>0</b> / 6</span>
+                <span><b data-builder-count>0</b> / 8</span>
               </div>
               <div class="builder-map-wrap">
                 <div class="builder-map-head"><span>User Area Map</span><span data-builder-util>0.0%</span></div>
@@ -923,8 +931,10 @@
                   <div class="builder-block hiz" data-builder-block="hiz">HIZ</div>
                   <div class="builder-block bgr" data-builder-block="bgr">BGR</div>
                   <div class="builder-block ref" data-builder-block="ref"></div>
-                  <div class="builder-block sram-one" data-builder-block="sram-one">32KB</div>
-                  <div class="builder-block sram-two" data-builder-block="sram-two">32KB</div>
+                  <div class="builder-block sram sram-one" data-builder-block="sram-one">32KB</div>
+                  <div class="builder-block sram sram-two" data-builder-block="sram-two">32KB</div>
+                  <div class="builder-block sram sram-three" data-builder-block="sram-three">32KB</div>
+                  <div class="builder-block sram sram-four" data-builder-block="sram-four">32KB</div>
                 </div>
               </div>
               <div class="builder-summary">
@@ -1070,12 +1080,14 @@
       let builderTimers = [];
 
       const builderSteps = [
-        { key: "hiz", row: "hiz", area: "1.0%", license: 18500, integration: 9250, total: 42700 },
-        { key: "adc", row: "adc", area: "3.6%", license: 42900, integration: 21450, total: 79300 },
-        { key: "bgr", row: "bgr", area: "5.0%", license: 50600, integration: 25300, total: 90850 },
-        { key: "ref", row: "ref", area: "5.2%", license: 53700, integration: 26850, total: 95500 },
-        { key: "sram-one", row: "sram", area: "16.0%", license: 56200, integration: 28100, total: 99250 },
-        { key: "sram-two", row: "sram", area: "26.8%", license: 56200, integration: 28100, total: 99250 },
+        { key: "sram-one", row: "sram", area: "10.8%", license: 2500, integration: 1250, total: 18700 },
+        { key: "sram-two", row: "sram", area: "21.6%", license: 2500, integration: 1250, total: 18700 },
+        { key: "sram-three", row: "sram", area: "32.3%", license: 2500, integration: 1250, total: 18700 },
+        { key: "sram-four", row: "sram", area: "43.1%", license: 2500, integration: 1250, total: 18700 },
+        { key: "hiz", row: "hiz", area: "44.1%", license: 21000, integration: 10500, total: 46450 },
+        { key: "adc", row: "adc", area: "46.7%", license: 45400, integration: 22700, total: 83050 },
+        { key: "bgr", row: "bgr", area: "48.0%", license: 53100, integration: 26550, total: 94600 },
+        { key: "ref", row: "ref", area: "48.3%", license: 56200, integration: 28100, total: 99250 },
       ];
 
       document.documentElement.style.setProperty("--scene-ms", `${duration}ms`);
@@ -1122,7 +1134,7 @@
             demo.querySelector(`[data-builder-row="${step.row}"]`).classList.add("selecting");
             const commitTimer = setTimeout(() => updateBuilder(demo, stepIndex + 1), 180);
             builderTimers.push(commitTimer);
-          }, 650 + stepIndex * 1100);
+          }, 420 + stepIndex * 780);
           builderTimers.push(selectTimer);
         });
       }
